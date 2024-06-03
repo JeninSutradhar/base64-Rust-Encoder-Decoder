@@ -2,6 +2,8 @@
 
 A Rust implementation of a Base64 encoder and decoder. This project includes functions to encode binary data into a Base64 string and decode a Base64 string back into binary data.
 
+![image](https://github.com/JeninSutradhar/base64-Rust-Encoder-Decoder/assets/111521642/53221eb0-11eb-4478-b3f4-f1835e8e24c7)
+
 ## Table of Contents
 
 - [Introduction](#introduction)
