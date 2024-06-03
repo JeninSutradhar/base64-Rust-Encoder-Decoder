@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder and Decoder Rust Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Base64 Encoder and Decoder Rust</h1>
+        <p>A Rust implementation of a Base64 encoder and decoder. This project includes functions to encode binary data into a Base64 string and decode a Base64 string back into binary data.</p>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#usage">Usage</a>
+                <ul>
+                    <li><a href="#encoding">Encoding</a></li>
+                    <li><a href="#decoding">Decoding</a></li>
+                </ul>
+            </li>
+            <li><a href="#examples">Examples</a></li>
+            <li><a href="#installation">Installation</a></li>
+            <li><a href="#code-explaination">Code Explanation</a></li>
+            <li><a href="#running-tests">Running Tests</a></li>
+            <li><a href="#contributing">Contributing</a></li>
+            <li><a href="#license">License</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section id="introduction">
+            <h2>Introduction</h2>
+            <p>Base64 encoding is a method to convert binary data into an ASCII string format using 64 printable characters (A-Z, a-z, 0-9, +, and /). This encoding scheme is widely used for transmitting binary data over media designed to handle text.</p>
+            <p>This project provides a simple and efficient implementation of Base64 encoding and decoding in Rust.</p>
+        </section>
+        <section id="usage">
+            <h2>Usage</h2>
+            <section id="encoding">
+                <h3>Encoding</h3>
+                <p>To encode data using Base64, use the <code>base64_encode</code> function provided by the library. It takes a byte slice and returns a Base64 encoded string.</p>
+            </section>
+            <section id="decoding">
+                <h3>Decoding</h3>
+                <p>To decode a Base64 encoded string, use the <code>base64_decode</code> function. It takes a Base64 encoded string and returns a byte vector (if decoding is successful) or an error.</p>
+            </section>
+        </section>
+        <section id="examples">
+            <h2>Examples</h2>
+            <section>
+                <h3>Encoding Example</h3>
+                <pre><code>use base64::base64_encode;
+
+fn main() {
+    let data = b"The quick brown fox jumps over the lazy dog";
+    let encoded = base64_encode(data);
+    println!("Encoded: {}", encoded);
+}</code></pre>
+            </section>
+            <section>
+                <h3>Decoding Example</h3>
+                <pre><code>use base64::base64_decode;
+
+fn main() {
+    let encoded = "VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
+    
+    match base64_decode(encoded) {
+        Ok(decoded) => {
+            let decoded_str = String::from_utf8(decoded).expect("Invalid UTF-8 sequence");
+            println!("Decoded: {}", decoded_str);
+        },
+        Err((err_msg, invalid_byte)) => {
+            println!("Error: {} (invalid byte: {})", err_msg, invalid_byte);
+        }
+    }
+}</code></pre>
+            </section>
+        </section>
+        <section id="installation">
+            <h2>Installation</h2>
+            <p>To use this library in your project, add the following to your <code>Cargo.toml</code>:</p>
+            <pre><code>[dependencies]
+base64 = { path = "path/to/your/library" }</code></pre>
+            <p>Then, import the library in your <code>main.rs</code> or <code>lib.rs</code>:</p>
+            <pre><code>use base64::{base64_encode, base64_decode};</code></pre>
+        </section>
+        <section id="code-explaination">
+            <h2>Code Explanation</h2>
+            <p>Certainly! Let's break down the working of the code and the <code>base64_encode</code> and <code>base64_decode</code> functions in detail.</p>
+            <h3>Working of the Code</h3>
+            <p><strong>Base64 Encoding and Decoding Overview</strong>:</p>
+            <ul>
+                <li>Base64 encoding converts binary data into a textual representation using 64 ASCII characters. Each Base64 character represents 6 bits of the original binary data.</li>
+                <li>Decoding is the reverse process, converting the Base64 text back into binary data.</li>
+            </ul>
+            <h3>Constants</h3>
+            <p><strong>CHARSET</strong>:</p>
+            <pre><code>const CHARSET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";</code></pre>
+            <p>This defines the 64 characters used in Base64 encoding.</p>
+            <p><strong>PADDING</strong>:</p>
+            <pre><code>const PADDING: char = '=';</code></pre>
+            <p>This character is used for padding the Base64 encoded string when the input data is not a multiple of 3 bytes.</p>
+            <h3>Helper Function</h3>
+            <p><strong>collect_six_bits</strong>:</p>
+            <pre><code>fn collect_six_bits(from: (u8, u8), offset: u8) -> u8 {
+    let combined: u16 = ((from.0 as u16) << 8) | (from.1 as u16);
+    ((combined & (0b1111110000000000u16 >> offset)) >> (10 - offset)) as u8
+}</code></pre>
+            <p>Parameters: Takes a tuple of two bytes (<code>from</code>) and an offset (<code>offset</code>).</p>
+            <p>Combines the two bytes into a single 16-bit integer.</p>
+            <p>Masks and extracts 6 bits from the combined value based on the offset.</p>
+            <p>Returns: A single byte (<code>u8</code>) containing the 6 bits extracted.</p>
+            <h3>Encoding Function</h3>
+            <p><strong>base64_encode</strong>:</p>
+            <pre><code>pub fn base64_encode(data: &[u8]) -> String {
+    let mut encoded_string = String::new();
+    let mut bits_encoded = 0usize;
+
+    let padding_needed = ((6 - (data.len() * 8) % 6) / 2) % 3;
+    loop {
+        let lower_byte_index_to_encode = bits_encoded / 8usize;
+        if lower_byte_index_to_encode == data.len() {
+            break;
+        };
+
+        let lower_byte_to_encode = data[lower_byte_index_to_encode];
+        let upper_byte_to_code = if (lower_byte_index_to_encode + 1) == data.len() {
+            0u8
+        } else {
+            data[lower_byte_index_to_encode + 1]
+        };
+
+        let bytes_to_encode = (lower_byte_to_encode, upper_byte_to_code);
+        let offset: u8 = (bits_encoded % 8) as u8;
+        encoded_string.push(CHARSET[collect_six_bits(bytes_to_encode, offset) as usize] as char);
+
+        bits_encoded += 6;
+    }
+
+    for _ in 0..padding_needed {
+        encoded_string.push(PADDING);
+    }
+
+    encoded_string
+}</code></pre>
+            <p>Input: Takes a byte slice (<code>&[u8]</code>) of the data to be encoded.</p>
+            <p>Initializes an empty string <code>encoded_string</code> to hold the resulting Base64 encoded string.</p>
+            <p>Calculates the necessary padding based on the length of the input data.</p>
+            <p>Loop:</p>
+            <ul>
+                <li>Determines the index of the current byte to encode based on <code>bits_encoded</code>.</li>
+                <li>If all bytes are processed, the loop breaks.</li>
+                <li>Retrieves the current byte and the next byte (if available) to form a 16-bit combined value.</li>
+                <li>Calls <code>collect_six_bits</code> to get 6 bits from the combined value.</li>
+                <li>Maps the 6 bits to a Base64 character using <code>CHARSET</code> and appends it to <code>encoded_string</code>.</li>
+                <li>Increments <code>bits_encoded</code> by 6.</li>
+            </ul>
+            <p>Adds padding characters if needed.</p>
+            <p>Returns the encoded string.</p>
+            <h3>Decoding Function</h3>
+            <p><strong>base64_decode</strong>:</p>
+            <pre><code>pub fn base64_decode(data: &str) -> Result<Vec<u8>, (&str, u8)> {
+    let mut collected_bits = 0;
+    let mut byte_buffer = 0u16;
+    let mut databytes = data.bytes();
+    let mut outputbytes = Vec::<u8>::new();
+
+    'decodeloop: loop {
+        while collected_bits < 8 {
+            if let Some(nextbyte) = databytes.next() {
+                if let Some(idx) = CHARSET.iter().position(|&x| x == nextbyte) {
+                    byte_buffer |= ((idx & 0b00111111) as u16) << (10 - collected_bits);
+                    collected_bits += 6;
+                } else if nextbyte == (PADDING as u8) {
+                    collected_bits -= 2;
+                } else {
+                    return Err(("Failed to decode base64: Expected byte from charset, found invalid byte.", nextbyte));
+                }
+            } else {
+                break 'decodeloop;
+            }
+        }
+        outputbytes.push(((0b1111111100000000 & byte_buffer) >> 8) as u8);
+        byte_buffer &= 0b0000000011111111;
+        byte_buffer <<= 8;
+        collected_bits -= 8;
+    }
+
+    if collected_bits != 0 {
+        return Err(("Failed to decode base64: Invalid padding.", collected_bits));
+    }
+
+    Ok(outputbytes)
+}</code></pre>
+            <p>Input: Takes a Base64 encoded string (<code>&str</code>).</p>
+            <p>Initializes:</p>
+            <ul>
+                <li><code>collected_bits</code> to keep track of bits collected.</li>
+                <li><code>byte_buffer</code> to store bits as they are collected.</li>
+                <li><code>databytes</code> as an iterator over the bytes of the input string.</li>
+                <li><code>outputbytes</code> as a vector to store the decoded bytes.</li>
+            </ul>
+            <p>Loop:</p>
+            <ul>
+                <li>Collects bits until at least 8 bits are available.</li>
+                <li>Retrieves the next byte from the iterator.</li>
+                <li>Checks if the byte is in the <code>CHARSET</code> and gets its index, otherwise checks for padding.</li>
+                <li>Updates <code>byte_buffer</code> with the 6 bits from the current byte.</li>
+                <li>Adds the byte to the <code>outputbytes</code> when at least 8 bits are available.</li>
+                <li>Adjusts <code>byte_buffer</code> and <code>collected_bits</code> for the next iteration.</li>
+            </ul>
+            <p>Handles padding by reducing <code>collected_bits</code> when a padding character is encountered.</p>
+            <p>Returns the decoded byte vector or an error if there is an issue with the input string (invalid characters or incorrect padding).</p>
+            <h3>Testing</h3>
+            <p><strong>Tests</strong>:</p>
+            <ul>
+                <li><code>pregenerated_random_bytes_encode</code>: Tests the encoding function with predefined byte arrays and their expected Base64 encoded strings.</li>
+                <li><code>pregenerated_random_bytes_decode</code>: Tests the decoding function with predefined Base64 encoded strings and their expected byte arrays.</li>
+                <li><code>encode_decode</code>: Tests the encoding and then decoding of predefined byte arrays to ensure the output matches the original input.</li>
+                <li><code>decode_encode</code>: Tests the decoding and then encoding of predefined Base64 encoded strings to ensure the output matches the original input.</li>
+            </ul>
+            <p>These tests ensure that the encoding and decoding functions work correctly for a variety of inputs, including edge cases and random data.</p>
+        </section>
+        <section id="running-tests">
+            <h2>Running Tests</h2>
+            <p>To run the provided tests for the encoder and decoder, use the following command:</p>
+            <pre><code>cargo test</code></pre>
+        </section>
+        <section id="contributing">
+            <h2>Contributing</h2>
+            <p>Contributions are welcome! If you find a bug or have a feature request, please open an issue. If you'd like to contribute code, please fork the repository and create a pull request.</p>
+            <ol>
+                <li>Fork the repository.</li>
+                <li>Create a new branch for your feature or bugfix.</li>
+                <li>Commit your changes.</li>
+                <li>Push to your branch.</li>
+                <li>Create a pull request.</li>
+            </ol>
+        </section>
+        <section id="license">
+            <h2>License</h2>
+            <p>This project is licensed under the MIT License. See the <a href="LICENSE">LICENSE</a> file for details.</p>
+        </section>
+    </main>
+    <footer>
+        <p>© 2024 Base64 Encoder and Decoder Rust. All rights reserved.</p>
+    </footer>
+</body>
+<style>
+  body {
+    background-color: #121212;
+    color: #E0E0E0;
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+header {
+    padding: 20px;
+    text-align: center;
+    background: #1E1E1E;
+}
+
+header h1 {
+    margin: 0;
+    color: #76FF03;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    text-align: center;
+    background: #1E1E1E;
+}
+
+nav ul li {
+    display: inline;
+    margin: 0 15px;
+}
+
+nav ul li a {
+    color: #76FF03;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+nav ul li a:hover {
+    text-decoration: underline;
+}
+
+main {
+    padding: 20px;
+}
+
+main h2, main h3 {
+    color: #76FF03;
+}
+
+pre {
+    background: #1E1E1E;
+    padding: 10px;
+    overflow-x: auto;
+}
+
+code {
+    color: #FFEB3B;
+}
+
+footer {
+    padding: 10px;
+    text-align: center;
+    background: #1E1E1E;
+}
+
+</style>
+</html>
