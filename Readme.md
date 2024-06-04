@@ -43,6 +43,7 @@ Here is an example of encoding data to a Base64 string:
 use base64::base64_encode;
 
 fn main() {
+    // Data : String to Encode
     let data = b"The quick brown fox jumps over the lazy dog";
     let encoded = base64_encode(data);
     println!("Encoded: {}", encoded);
