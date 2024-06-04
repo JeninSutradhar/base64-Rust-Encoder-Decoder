@@ -58,6 +58,7 @@ Here is an example of decoding a Base64 string back to its original binary data:
 use base64::base64_decode;
 
 fn main() {
+    // Decoded 'String' to Encode
     let encoded = "VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
     
     match base64_decode(encoded) {
